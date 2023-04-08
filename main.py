@@ -200,7 +200,7 @@ def trainAlgorithm(trainData, noise0, noise1):
                 col.append('b')
     X, Y = np.mgrid[0:100:200j, 0:100:200j]
     plt.figure(3)
-    plt.scatter(X,Y,c=col)
+    plt.scatter(X,Y,c=col) #comment
     plt.show()
     col = []
     for i in range(0, 200):
