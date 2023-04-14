@@ -19,14 +19,14 @@ def chooseRunMode():
 
 def generateLinearData():
     print("Generating Linear Data")
-    X = np.random.rand(1000,2)*100
-    y_size = 650
+    X = np.random.rand(2000,2)*100
+    y_size = 1400
     Y = -1*np.ones((y_size,2))
     index = 0
     for i in range(len(X)):
         #I am making a new array, Y, that does not have any values near the middle,
         #So there is clearly 2D separated data
-        if not((X[i,1] > (X[i,0] - 10)) and (X[i,1] < (X[i,0] + 10))):
+        if not((X[i,1] > (X[i,0] - 8)) and (X[i,1] < (X[i,0] + 8))):
             if(index < y_size):
                 Y[index,0] = X[i,0]
                 Y[index,1] = X[i,1]
@@ -91,6 +91,7 @@ def generateNoisyData(noise0, noise1, Class0, Class1):
             plt.scatter(combinedData[i,0], combinedData[i,1], c='r', label='Class1' )
         else:
             plt.scatter(combinedData[i,0], combinedData[i,1], c='b', label='Class0')
+    plt.title("Noise Added to Linearly Separable Data")
     plt.show()
     print("Checkpoint 2: Random Noise Inserted into Linearly Separable Data")
     return combinedData
@@ -109,12 +110,6 @@ def splitData(noisyData):
         else:
             testData = np.vstack([testData,noisyData[i,:]])
 
-    # plt.figure(2)
-    # plt.scatter(trainData[:,0], trainData[:,1])
-    # plt.show()
-    # plt.figure(3)
-    # plt.scatter(testData[:,0], testData[:,1])
-    # plt.show()
     print("Checkpoint 3: Split Data into Train & Test")
     return trainData, testData
 
@@ -162,84 +157,66 @@ def trainAlgorithm(trainData, noise0, noise1):
     pi_0 = len(class1_train)/(len(class1_train)+len(class0_train))
     pi_1 = len(class0_train)/(len(class1_train)+len(class0_train))
 
-    x0 = np.linspace(0, 100, 200)
-    x1 = np.linspace(0, 100, 200)
-    naive_prediction = np.zeros((200, 200))
-    good_prediction = np.zeros((200,200))
-    for i in range(0, 200):
-        for j in range(0, 200):
+    x0 = trainData[:,0]
+    x1 = trainData[:,1]
+    x2 = trainData[:,2]
+    incorrect_naive = 0
+    incorrect_good = 0
+    naive_prediction = np.zeros((len(trainData[:,0]), 3))
+    good_prediction = np.zeros((len(trainData[:,0]), 3))
+    for i in range(0, np.size(x0)):
             block = np.zeros((2, 1))
             block[0] = x0[i]
-            block[1] = x1[j]
+            block[1] = x1[i]
 
+            #unlike in the example from Homework 3 which was an 8x8 block, we can just do a 2x1 block.
             guess1 = -1 / 2 * np.matmul(np.matmul(np.transpose(block - mu1), inv_sigma1), (block - mu1)) + np.log(
                 pi_1) - 1 / 2 * np.log(det_sigma1)
             guess0 = -1 / 2 * np.matmul(np.matmul(np.transpose(block - mu0), inv_sigma0), (block - mu0)) + np.log(
                 pi_0) - 1 / 2 * np.log(det_sigma0)
             # print(str(guess1 > guess0) + " " + str(guess0) + " " + str(guess1) + " " + str(x0[i]) + " " + str(x0[j]))
 
+            naive_prediction[i,0] = x0[i]
+            naive_prediction[i,1] = x1[i]
             if guess1 > guess0:
-                naive_prediction[i][j] = 1
-
+                naive_prediction[i,2] = 1
             else:
-                naive_prediction[i][j] = -1
+                naive_prediction[i,2] = -1
 
-            #print(guess1)
-            #print(guess1 - (0.5 - noise0)/(1-noise1-noise0))
-            print(np.exp(guess1)/(np.exp(guess0)+np.exp(guess1)))
+
+
+            #This is my attempt at incorporating the logic from the paper.
+            good_prediction[i, 0] = x0[i]
+            good_prediction[i, 1] = x1[i]
             if np.sign(np.exp(guess1)/(np.exp(guess0)+np.exp(guess1)) - (0.5 - noise0)/(1-noise1-noise0)) == 1:
-                good_prediction[i][j] = 1
+                good_prediction[i,2] = 1
             else:
-                good_prediction[i][j] = -1
-    col = []
-    for i in range(0,200):
-        for j in range(0,200):
-            if(naive_prediction[i][j]==1):
-                col.append('r')
-            else:
-                col.append('b')
-    X, Y = np.mgrid[0:100:200j, 0:100:200j]
-    plt.figure(3)
-    plt.scatter(X,Y,c=col) #comment
-    plt.show()
-    col = []
-    for i in range(0, 200):
-        for j in range(0, 200):
-            if (good_prediction[i][j] == 1):
-                col.append('r')
-            else:
-                col.append('b')
-    X, Y = np.mgrid[0:100:200j, 0:100:200j]
-    plt.figure(3)
-    plt.scatter(X, Y, c=col)
-    plt.show()
-    X, Y = np.mgrid[0:100:200j, 0:100:200j]
-    prediction = naive_prediction.reshape(X.shape)
+                good_prediction[i,2] = -1
+
+    legends = ["Class0", "Class1"]
     plt.figure(4)
-    plt.contour(X, Y, prediction, levels=[0])
-    plt.scatter(class0_train[:, 0], class0_train[:, 1], c='b')
-    plt.scatter(class1_train[:, 0], class1_train[:, 1], c='r')
-    plt.legend(['Class0', 'Class1', 'Boundary'])
+    for i in range(0, (len(trainData[:,0]))):
+        if naive_prediction[i,2] == 1:
+
+            plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='r')
+        else:
+            plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='b')
+
     plt.title('Data with Naive Boundary Drawn')
-    plt.savefig('naive.png')
+    plt.show()
+    #plt.savefig('naive.png')
 
-    prediction = good_prediction.reshape(X.shape)
     plt.figure(5)
-    plt.contour(X, Y, prediction, levels=[0])
-    plt.scatter(class0_train[:, 0], class0_train[:, 1], c='b')
-    plt.scatter(class1_train[:, 0], class1_train[:, 1], c='r')
-    plt.legend(['Class0', 'Class1', 'Boundary'])
+    for i in range(0, (len(trainData[:,0]))):
+        if naive_prediction[i,2] == 1:
+
+            plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='r')
+        else:
+            plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
     plt.title('Data with Good Boundary Drawn')
-    plt.savefig('good.png')
+    plt.show()
+    #plt.savefig('good.png')
 
-def lossFunction(x,y):
-    if x == y:
-        return 0
-    else:
-        return 1
-
-def estimatedLoss(x,y,prob0, prob1, noise0,noise1):
-    loss = ((1-prob0)*lossFunction(x,y) - (prob1)*lossFunction(x,y))/(1-prob0-prob1)
 
 
 if __name__ == '__main__':
