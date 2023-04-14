@@ -113,7 +113,7 @@ def splitData(noisyData):
     print("Checkpoint 3: Split Data into Train & Test")
     return trainData, testData
 
-def trainAlgorithm(trainData, noise0, noise1):
+def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
     print("Starting to train the model....")
     #First need to find the mean & StdDev of each DataSet for Gaussian
     class1_count = np.count_nonzero(trainData[:,2], axis=0)
@@ -159,11 +159,9 @@ def trainAlgorithm(trainData, noise0, noise1):
 
     x0 = trainData[:,0]
     x1 = trainData[:,1]
-    x2 = trainData[:,2]
-    incorrect_naive = 0
-    incorrect_good = 0
     naive_prediction = np.zeros((len(trainData[:,0]), 3))
     good_prediction = np.zeros((len(trainData[:,0]), 3))
+
     for i in range(0, np.size(x0)):
             block = np.zeros((2, 1))
             block[0] = x0[i]
@@ -184,7 +182,6 @@ def trainAlgorithm(trainData, noise0, noise1):
                 naive_prediction[i,2] = -1
 
 
-
             #This is my attempt at incorporating the logic from the paper.
             good_prediction[i, 0] = x0[i]
             good_prediction[i, 1] = x1[i]
@@ -193,11 +190,10 @@ def trainAlgorithm(trainData, noise0, noise1):
             else:
                 good_prediction[i,2] = -1
 
-    legends = ["Class0", "Class1"]
+
     plt.figure(4)
     for i in range(0, (len(trainData[:,0]))):
         if naive_prediction[i,2] == 1:
-
             plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='r')
         else:
             plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='b')
@@ -209,7 +205,6 @@ def trainAlgorithm(trainData, noise0, noise1):
     plt.figure(5)
     for i in range(0, (len(trainData[:,0]))):
         if naive_prediction[i,2] == 1:
-
             plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='r')
         else:
             plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
@@ -217,8 +212,21 @@ def trainAlgorithm(trainData, noise0, noise1):
     plt.show()
     #plt.savefig('good.png')
 
+    return naive_prediction, good_prediction
 
+def evaluate(naive, good):
+    #I am evaluating based on knowing how I split the data
+    incorrect_naive = 0
+    incorrect_good = 0
+    for i in range(0, len(naive)):
+        if (naive[i, 0] - naive[i, 1]) < 0 and (naive[i,2] == 1):
+            incorrect_naive = incorrect_naive + 1
+        if (good[i, 0] - good[i, 1]) < 0 and (good[i, 2] == 1):
+            incorrect_good = incorrect_good + 1
 
+    print("Total Number of Data Points tested:" + str(len(good)))
+    print("Incorrect naive guess: " + str(incorrect_naive) + " Percent correct: " + str((len(naive)-incorrect_naive)/len(naive)))
+    print("Incorrect good guess: " + str(incorrect_good) +  " Percent correct: " + str((len(good)-incorrect_good)/len(good)))
 if __name__ == '__main__':
     runMode, noise0, noise1 = chooseRunMode() #Choose synthetic data or random
     if runMode == 1:
@@ -229,6 +237,7 @@ if __name__ == '__main__':
     noisyData = generateNoisyData(noise0,noise1, Class0,Class1) #modify for noise rates given
     trainData, testData = splitData(noisyData)
 
-    trainAlgorithm(trainData, noise0, noise1)
+    naive, good = trainAlgorithm(trainData, noise0, noise1, Class0, Class1)
+    evaluate(naive, good)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
