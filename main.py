@@ -10,6 +10,8 @@ import random
 import numpy as np
 import matplotlib as plt
 import matplotlib.pyplot as plt
+import csv
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 def chooseRunMode():
     # Use a breakpoint in the code line below to debug your script.
     run_type = int(input("Linear (1) or Random Data? (2) "))
@@ -49,14 +51,28 @@ def generateLinearData():
 
 def generateRandomData():
     print("Generating Random Data")
+    Class0 = np.zeros((1,2))
+    Class1 = np.zeros((1,2))
 
+    with open('banana.csv', 'r') as file:
+        reader = csv.reader(file,delimiter=',', quotechar='"')
+        next(file)
+        for row in reader:
+            x1 = float(row[0])
+            x2 = float(row[1])
+            if(row[2] == '1.0'):
+                Class1 = np.vstack([Class1,[x1,x2]])
+            else:
+                Class0 = np.vstack([Class0,[x1,x2]])
+    print(Class1)
+    return Class0, Class1
 def generateNoisyData(noise0, noise1, Class0, Class1):
     print("Generating Noisy Data -- flipping data")
     #First thing to do, is create a new matrix, of 3 dimension now, with the third dimension
     #being 1 or -1 based on the class.
     Class0_y = np.ones((len(Class0),1))
     Class0 = np.hstack([Class0, Class0_y])
-    Class1_y = np.zeros((len(Class1),1))
+    Class1_y = -1*np.ones((len(Class1),1))
     Class1 = np.hstack([Class1, Class1_y])
 
     combinedData = np.vstack([Class0, Class1])
@@ -214,7 +230,7 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
 
     return naive_prediction, good_prediction
 
-def evaluate(naive, good):
+def evaluateLinear(naive, good):
     #I am evaluating based on knowing how I split the data
     incorrect_naive = 0
     incorrect_good = 0
@@ -238,6 +254,7 @@ if __name__ == '__main__':
     trainData, testData = splitData(noisyData)
 
     naive, good = trainAlgorithm(trainData, noise0, noise1, Class0, Class1)
-    evaluate(naive, good)
+    if runMode == 1:
+        evaluateLinear(naive, good)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
