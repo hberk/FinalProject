@@ -220,7 +220,7 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
 
     plt.figure(5)
     for i in range(0, (len(trainData[:,0]))):
-        if naive_prediction[i,2] == 1:
+        if good_prediction[i,2] == 1:
             plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='r')
         else:
             plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
@@ -235,9 +235,9 @@ def evaluateLinear(naive, good):
     incorrect_naive = 0
     incorrect_good = 0
     for i in range(0, len(naive)):
-        if (naive[i, 0] - naive[i, 1]) < 0 and (naive[i,2] == 1):
+        if (naive[i, 0] - naive[i, 1]) < 0 and (naive[i,2] == -1):
             incorrect_naive = incorrect_naive + 1
-        if (good[i, 0] - good[i, 1]) < 0 and (good[i, 2] == 1):
+        if (good[i, 0] - good[i, 1]) < 0 and (good[i, 2] == -1):
             incorrect_good = incorrect_good + 1
 
     print("Total Number of Data Points tested:" + str(len(good)))
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     if runMode == 1:
         Class0, Class1 = generateLinearData() #generate synthetic linearly separable 2-D data.
     if runMode == 2:
-        Class0, Class1 = generateRandomData()
+        Class0, Class1 = generateRandomData() #using "banana" dataset like in the actual paper. 
 
     noisyData = generateNoisyData(noise0,noise1, Class0,Class1) #modify for noise rates given
     trainData, testData = splitData(noisyData)
