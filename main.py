@@ -70,9 +70,9 @@ def generateNoisyData(noise0, noise1, Class0, Class1):
     print("Generating Noisy Data -- flipping data")
     #First thing to do, is create a new matrix, of 3 dimension now, with the third dimension
     #being 1 or -1 based on the class.
-    Class0_y = np.ones((len(Class0),1))
+    Class0_y = -1*np.ones((len(Class0),1))
     Class0 = np.hstack([Class0, Class0_y])
-    Class1_y = -1*np.ones((len(Class1),1))
+    Class1_y = 1*np.ones((len(Class1),1))
     Class1 = np.hstack([Class1, Class1_y])
 
     combinedData = np.vstack([Class0, Class1])
@@ -98,10 +98,10 @@ def generateNoisyData(noise0, noise1, Class0, Class1):
         if(flip0counter < len(flip0index)):
             if i == flip0index[flip0counter]:
                 flip0counter = flip0counter + 1
-                combinedData[i,2] = -1
+                combinedData[i,2] = 1
         if(flip1counter < len(flip1index) ):
                 if i == flip1index[flip1counter]:
-                    combinedData[i,2] = 1
+                    combinedData[i,2] = -1
                     flip1counter = flip1counter + 1
         if combinedData[i,2] == 1:
             plt.scatter(combinedData[i,0], combinedData[i,1], c='r', label='Class1' )
@@ -135,7 +135,6 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
     class1_count = np.count_nonzero(trainData[:,2], axis=0)
     class0_count = len(trainData) - class1_count
     class0_train = np.zeros((1,3))
-
     class1_train = np.zeros((1,3))
 
     for i in range(0,len(trainData)):
@@ -170,8 +169,8 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
     det_sigma1 = np.linalg.det(class1_sigma)
     inv_sigma0 = np.linalg.inv(class0_sigma)
     inv_sigma1 = np.linalg.inv(class1_sigma)
-    pi_0 = len(class1_train)/(len(class1_train)+len(class0_train))
-    pi_1 = len(class0_train)/(len(class1_train)+len(class0_train))
+    pi_0 = len(class0_train)/(len(class1_train)+len(class0_train))
+    pi_1 = len(class1_train)/(len(class1_train)+len(class0_train))
 
     x0 = trainData[:,0]
     x1 = trainData[:,1]
@@ -197,14 +196,24 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
             else:
                 naive_prediction[i,2] = -1
 
-
+            guess1_good =  -1 / 2 * np.matmul(np.matmul(np.transpose(block - mu1), inv_sigma1), (block - mu1)) + np.log(
+                pi_1) - 1 / 2 * np.log(det_sigma1) - 1/2*np.log(2*np.pi)
+            guess0_good = -1 / 2 * np.matmul(np.matmul(np.transpose(block - mu0), inv_sigma0), (block - mu0)) + np.log(
+                pi_0) - 1 / 2 * np.log(det_sigma0) - 1/2*np.log(2*np.pi)
             #This is my attempt at incorporating the logic from the paper.
             good_prediction[i, 0] = x0[i]
             good_prediction[i, 1] = x1[i]
-            if np.sign(np.exp(guess1)/(np.exp(guess0)+np.exp(guess1)) - (0.5 - noise0)/(1-noise1-noise0)) == 1:
+            good_guess = np.exp(guess1_good)/(np.exp(guess0_good)+np.exp(guess1_good))
+            #This if statement is saying P(x given y = 1) * P(Y = 1) / ( P( x given y = 1) * P(y=1) + P(x given y = -1)*P(y=-1)
+            if np.sign(good_guess - (0.5 - noise0)/(1-noise1-noise0)) == 1:
                 good_prediction[i,2] = 1
             else:
                 good_prediction[i,2] = -1
+
+            if naive_prediction[i,2] != good_prediction[i,2]:
+                print(naive_prediction[i,:])
+                print(str(guess1) + " " + str(guess0))
+                print(str(guess1_good) + " " + str(guess0_good) + str(good_guess))
 
 
     plt.figure(4)
@@ -234,10 +243,11 @@ def evaluateLinear(naive, good):
     #I am evaluating based on knowing how I split the data
     incorrect_naive = 0
     incorrect_good = 0
+
     for i in range(0, len(naive)):
-        if (naive[i, 0] - naive[i, 1]) < 0 and (naive[i,2] == -1):
+        if ((naive[i, 0] - naive[i, 1]) < 0 and (naive[i,2] == 1)) or ((naive[i,0] - naive[i,1] > 0) and naive[i,2] == -1):
             incorrect_naive = incorrect_naive + 1
-        if (good[i, 0] - good[i, 1]) < 0 and (good[i, 2] == -1):
+        if (good[i, 0] - good[i, 1]) < 0 and (good[i, 2] == 1) or ((good[i,0] - good[i,1] > 0) and good[i,2] == -1):
             incorrect_good = incorrect_good + 1
 
     print("Total Number of Data Points tested:" + str(len(good)))
