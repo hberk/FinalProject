@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib as plt
 import matplotlib.pyplot as plt
 import csv
+import cvxpy as cp
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 def chooseRunMode():
     # Use a breakpoint in the code line below to debug your script.
@@ -21,14 +22,14 @@ def chooseRunMode():
 
 def generateLinearData():
     print("Generating Linear Data")
-    X = np.random.rand(2000,2)*100
+    X = np.random.rand(2000,2)*200-100
     y_size = 1400
     Y = -1*np.ones((y_size,2))
     index = 0
     for i in range(len(X)):
         #I am making a new array, Y, that does not have any values near the middle,
         #So there is clearly 2D separated data
-        if not((X[i,1] > (X[i,0] - 8)) and (X[i,1] < (X[i,0] + 8))):
+        if not((X[i,1] > (X[i,0] - 20)) and (X[i,1] < (X[i,0] + 20))):
             if(index < y_size):
                 Y[index,0] = X[i,0]
                 Y[index,1] = X[i,1]
@@ -129,7 +130,7 @@ def splitData(noisyData):
     print("Checkpoint 3: Split Data into Train & Test")
     return trainData, testData
 
-def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
+def trainAlgorithm(trainData, noise0, noise1, Class0, Class1, parameter, printGraphs):
     print("Starting to train the model....")
     #First need to find the mean & StdDev of each DataSet for Gaussian
     class1_count = np.count_nonzero(trainData[:,2], axis=0)
@@ -151,8 +152,8 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
     mu0[1] = np.average(class0_train[:,1])
     mu1[0] = np.average(class1_train[:,0])
     mu1[1] = np.average(class1_train[:,1])
-    print("Average for class0: " + str(mu0))
-    print("Average for class1: " + str(mu1))
+    #print("Average for class0: " + str(mu0))
+    #print("Average for class1: " + str(mu1))
     class0_sigma = [[0, 0], [0, 0]]
     class1_sigma = [[0, 0], [0, 0]]
 
@@ -171,6 +172,8 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
     inv_sigma1 = np.linalg.inv(class1_sigma)
     pi_0 = len(class0_train)/(len(class1_train)+len(class0_train))
     pi_1 = len(class1_train)/(len(class1_train)+len(class0_train))
+    #print(pi_0)
+    #print(pi_1)
 
     x0 = trainData[:,0]
     x1 = trainData[:,1]
@@ -204,16 +207,19 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
             good_prediction[i, 0] = x0[i]
             good_prediction[i, 1] = x1[i]
             good_guess = np.exp(guess1_good)/(np.exp(guess0_good)+np.exp(guess1_good))
+            noisyClassifierAdjuster = (0.5 - noise0)/(1-noise1-noise0)
             #This if statement is saying P(x given y = 1) * P(Y = 1) / ( P( x given y = 1) * P(y=1) + P(x given y = -1)*P(y=-1)
-            if np.sign(good_guess - (0.5 - noise0)/(1-noise1-noise0)) == 1:
+            if noise0 != noise1:
+                noisyClassifierAdjuster = noisyClassifierAdjuster*parameter #this is temp fix
+            if np.sign(good_guess - noisyClassifierAdjuster) == 1:
                 good_prediction[i,2] = 1
             else:
                 good_prediction[i,2] = -1
 
-            if naive_prediction[i,2] != good_prediction[i,2]:
-                print(naive_prediction[i,:])
-                print(str(guess1) + " " + str(guess0))
-                print(str(guess1_good) + " " + str(guess0_good) + str(good_guess))
+            # if naive_prediction[i,2] != good_prediction[i,2]:
+            #     print(naive_prediction[i,:])
+            #     print(str(guess1) + " " + str(guess0))
+            #     print(str(guess1_good) + " " + str(guess0_good) + str(good_guess))
 
 
     plt.figure(4)
@@ -224,7 +230,8 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
             plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='b')
 
     plt.title('Data with Naive Boundary Drawn')
-    plt.show()
+    if(printGraphs):
+        plt.show()
     #plt.savefig('naive.png')
 
     plt.figure(5)
@@ -234,7 +241,8 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1):
         else:
             plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
     plt.title('Data with Good Boundary Drawn')
-    plt.show()
+    if(printGraphs):
+        plt.show()
     #plt.savefig('good.png')
 
     return naive_prediction, good_prediction
@@ -250,9 +258,12 @@ def evaluateLinear(naive, good):
         if (good[i, 0] - good[i, 1]) < 0 and (good[i, 2] == 1) or ((good[i,0] - good[i,1] > 0) and good[i,2] == -1):
             incorrect_good = incorrect_good + 1
 
-    print("Total Number of Data Points tested:" + str(len(good)))
+    percent_correct =  (len(good)-incorrect_good)/len(good)
+
+    #print("Total Number of Data Points tested:" + str(len(good)))
     print("Incorrect naive guess: " + str(incorrect_naive) + " Percent correct: " + str((len(naive)-incorrect_naive)/len(naive)))
     print("Incorrect good guess: " + str(incorrect_good) +  " Percent correct: " + str((len(good)-incorrect_good)/len(good)))
+    return percent_correct
 if __name__ == '__main__':
     runMode, noise0, noise1 = chooseRunMode() #Choose synthetic data or random
     if runMode == 1:
@@ -263,8 +274,21 @@ if __name__ == '__main__':
     noisyData = generateNoisyData(noise0,noise1, Class0,Class1) #modify for noise rates given
     trainData, testData = splitData(noisyData)
 
-    naive, good = trainAlgorithm(trainData, noise0, noise1, Class0, Class1)
-    if runMode == 1:
-        evaluateLinear(naive, good)
-
+    parameter = np.linspace(0.1,2.5,10)
+    parameter = np.atleast_2d(parameter)
+    results = np.zeros((20,1))
+    for i in range(len(parameter[0])):
+        naive, good = trainAlgorithm(trainData, noise0, noise1, Class0, Class1, parameter[0,i], False)
+        if runMode == 1:
+            print("Evaluation of parmeter " + str(parameter[0,i]) + " Results:")
+            results[i,0] = evaluateLinear(naive, good)
+            #print(results)
+    print(results)
+    max_index = np.argmax(results)
+    print("Maximum occurs with parameter: " + str(parameter[0,max_index]))
+    print("Now we use the test data to see how good it was")
+    naive, good = trainAlgorithm(testData, noise0, noise1, Class0, Class1,  parameter[0,max_index], True)
+    print("Final Error is: ")
+    final_result = evaluateLinear(naive,good)
+    print(final_result)
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
