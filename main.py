@@ -11,6 +11,10 @@ import numpy as np
 import matplotlib as plt
 import matplotlib.pyplot as plt
 import csv
+
+import scipy
+from scipy.optimize import minimize
+from sklearn import svm
 import cvxpy as cp
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 def chooseRunMode():
@@ -23,7 +27,7 @@ def chooseRunMode():
 def generateLinearData():
     print("Generating Linear Data")
     X = np.random.rand(2000,2)*200-100
-    y_size = 1400
+    y_size = 1600
     Y = -1*np.ones((y_size,2))
     index = 0
     for i in range(len(X)):
@@ -65,7 +69,7 @@ def generateRandomData():
                 Class1 = np.vstack([Class1,[x1,x2]])
             else:
                 Class0 = np.vstack([Class0,[x1,x2]])
-    print(Class1)
+    #print(Class1)
     return Class0, Class1
 def generateNoisyData(noise0, noise1, Class0, Class1):
     print("Generating Noisy Data -- flipping data")
@@ -131,7 +135,7 @@ def splitData(noisyData):
     return trainData, testData
 
 def trainAlgorithm(trainData, noise0, noise1, Class0, Class1, parameter, printGraphs):
-    print("Starting to train the model....")
+    #print("Starting to train the model....")
     #First need to find the mean & StdDev of each DataSet for Gaussian
     class1_count = np.count_nonzero(trainData[:,2], axis=0)
     class0_count = len(trainData) - class1_count
@@ -144,9 +148,9 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1, parameter, printGr
         else:
             class0_train = np.vstack([class0_train, trainData[i,:]])
 
-    class0_train = class0_train[2:len(class0_train),:]
+    class0_train = class0_train[2:len(class0_train), :]
     class1_train = class1_train[2:len(class1_train), :]
-    mu0 = np.zeros((2,1))
+    mu0 = np.zeros((2, 1))
     mu1 = np.zeros((2, 1))
     mu0[0] = np.average(class0_train[:,0])
     mu0[1] = np.average(class0_train[:,1])
@@ -221,29 +225,30 @@ def trainAlgorithm(trainData, noise0, noise1, Class0, Class1, parameter, printGr
             #     print(str(guess1) + " " + str(guess0))
             #     print(str(guess1_good) + " " + str(guess0_good) + str(good_guess))
 
-
-    plt.figure(4)
-    for i in range(0, (len(trainData[:,0]))):
-        if naive_prediction[i,2] == 1:
-            plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='r')
-        else:
-            plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='b')
-
-    plt.title('Data with Naive Boundary Drawn')
     if(printGraphs):
-        plt.show()
-    #plt.savefig('naive.png')
+        plt.figure(4)
 
-    plt.figure(5)
-    for i in range(0, (len(trainData[:,0]))):
-        if good_prediction[i,2] == 1:
-            plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='r')
-        else:
-            plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
-    plt.title('Data with Good Boundary Drawn')
-    if(printGraphs):
-        plt.show()
-    #plt.savefig('good.png')
+        for i in range(0, (len(trainData[:,0]))):
+            if naive_prediction[i,2] == 1:
+                plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='r')
+            else:
+                plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='b')
+
+        plt.title('Data with Naive Boundary Drawn')
+        if(printGraphs):
+            #plt.show()
+            plt.savefig('naive.png')
+
+        plt.figure(5)
+        for i in range(0, (len(trainData[:,0]))):
+            if good_prediction[i,2] == 1:
+                plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='r')
+            else:
+                plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
+        plt.title('Data with Good Boundary Drawn')
+        if(printGraphs):
+            #plt.show()
+            plt.savefig('good.png')
 
     return naive_prediction, good_prediction
 
@@ -261,33 +266,121 @@ def evaluateLinear(naive, good):
     percent_correct =  (len(good)-incorrect_good)/len(good)
 
     #print("Total Number of Data Points tested:" + str(len(good)))
-    print("Incorrect naive guess: " + str(incorrect_naive) + " Percent correct: " + str((len(naive)-incorrect_naive)/len(naive)))
-    print("Incorrect good guess: " + str(incorrect_good) +  " Percent correct: " + str((len(good)-incorrect_good)/len(good)))
+    #print("Incorrect naive guess: " + str(incorrect_naive) + " Percent correct: " + str((len(naive)-incorrect_naive)/len(naive)))
+    #print("Incorrect good guess: " + str(incorrect_good) +  " Percent correct: " + str((len(good)-incorrect_good)/len(good)))
     return percent_correct
+
+def trySVM(trainData, testData):
+    clf = svm.SVC(kernel='linear')  # Linear Kernel
+    clf.fit(trainData[:, :2], trainData[:, 2])
+    y_pred = clf.predict(testData[:, :2])
+
+    plt.figure(3)
+    #print(y_pred)
+    for i in range(len(y_pred)-1):
+        if y_pred[i] == 1:
+            plt.scatter(testData[i,0], testData[i,1], c='r')
+        else:
+            plt.scatter(testData[i,0], testData[i,1], c='b')
+
+    incorrect = 0
+
+    for i in range(0, len(y_pred)):
+        if ((testData[i, 0] - testData[i, 1]) < 0 and (y_pred[i] == 1)) or (
+                (testData[i, 0] - testData[i, 1] > 0) and (y_pred[i] == -1)):
+            incorrect = incorrect + 1
+
+
+    percent_correct = (len(y_pred) - incorrect) / len(y_pred)
+    print("Precent correct using SVM = " + str(percent_correct))
+    plt.title('Data using SVM')
+    plt.savefig('SVM Attempt')
+    #plt.show()
+
+def tryGradientSearch(trainData):
+    max_iterations = 50000
+    theta_k = np.zeros(3)
+    theta_k = np.atleast_2d(theta_k)
+    theta_k = np.transpose(theta_k)  # this converts theta to a column vector
+    all_data = trainData[:, :2]
+    num_rows, num_cols = np.shape(all_data)
+    ones = np.transpose(np.atleast_2d(np.ones(num_rows)))
+    all_data = np.hstack([ones, all_data])
+    y = trainData[:, 2]
+    y = np.atleast_2d(y)
+    y = np.transpose(y)
+    J = np.array([])
+    J = np.append(J, np.sum(np.power((y - np.matmul(all_data, theta_k)),
+                                     2)))  # The first cost function analysis which gives 3224 which is right
+    del_theta_k = np.matmul(np.transpose(all_data), (np.matmul(all_data, theta_k) - y))
+    print(np.shape(all_data))
+    print(np.shape(theta_k))
+    print(np.shape(np.matmul(all_data,theta_k)))
+    print(np.shape(y))
+    print(np.shape(del_theta_k))
+    num_iter = 0
+    numerator = np.matmul(np.transpose(del_theta_k), del_theta_k)
+    denominator = np.matmul(np.matmul(np.transpose(del_theta_k), np.matmul(np.transpose(all_data), all_data)),
+                            del_theta_k)
+    print(numerator)
+    print(denominator)
+    alpha = np.array([])
+    alpha = np.append(alpha, numerator / denominator)
+    print(alpha)
+    while num_iter < max_iterations:
+        theta_k = theta_k - alpha[num_iter] * del_theta_k
+        # print(theta_k)
+        J = np.append(J, np.sum(np.power((y - np.matmul(all_data, theta_k)), 2)))
+        #print(J)
+        del_theta_k = np.matmul(np.transpose(all_data), (np.matmul(all_data, theta_k) - y))
+        numerator = -np.matmul(np.transpose(del_theta_k), del_theta_k)
+        denominator = np.matmul(np.matmul(np.transpose(del_theta_k), np.matmul(np.transpose(all_data), all_data)),
+                                del_theta_k)
+        alpha = np.append(alpha, np.abs(numerator / denominator))
+        # print(alpha)
+        num_iter = num_iter + 1
+    print("Final answer is: " + str(theta_k) + " Matches previous answers")
+    plt.plot(J)
+    plt.show()
+
+def polyfit(x,z):
+    return x**3*z[0] + x**2*z[1] + x*z[2] + z[3]
 if __name__ == '__main__':
     runMode, noise0, noise1 = chooseRunMode() #Choose synthetic data or random
     if runMode == 1:
         Class0, Class1 = generateLinearData() #generate synthetic linearly separable 2-D data.
     if runMode == 2:
-        Class0, Class1 = generateRandomData() #using "banana" dataset like in the actual paper. 
+        Class0, Class1 = generateRandomData() #using "banana" dataset like in the actual paper.
 
     noisyData = generateNoisyData(noise0,noise1, Class0,Class1) #modify for noise rates given
     trainData, testData = splitData(noisyData)
 
-    parameter = np.linspace(0.1,2.5,10)
+    trySVM(trainData, testData)
+    #tryGradientSearch(trainData)
+    parameter = np.linspace(0.1,2.5,50)
     parameter = np.atleast_2d(parameter)
-    results = np.zeros((20,1))
+    results = np.zeros((50,1))
+    trainData = trainData[1:len(trainData),:]
+    testData = testData[1:len(testData),:]
     for i in range(len(parameter[0])):
         naive, good = trainAlgorithm(trainData, noise0, noise1, Class0, Class1, parameter[0,i], False)
         if runMode == 1:
             print("Evaluation of parmeter " + str(parameter[0,i]) + " Results:")
             results[i,0] = evaluateLinear(naive, good)
             #print(results)
-    print(results)
-    max_index = np.argmax(results)
-    print("Maximum occurs with parameter: " + str(parameter[0,max_index]))
+    #print(results)
+    plt.figure(10)
+    y = 1 - np.transpose(results)
+    plt.plot(parameter[0],y[0])
+    z = np.polyfit(parameter[0],y[0],3)
+    y2 = np.poly1d(z)
+    plt.plot(parameter[0],y2(parameter[0]))
+    plt.show()
+    fit = minimize(polyfit,x0=1,args=(z))
+    print("Optimized parameter is: " + str(fit.x))
+
     print("Now we use the test data to see how good it was")
-    naive, good = trainAlgorithm(testData, noise0, noise1, Class0, Class1,  parameter[0,max_index], True)
+    naive, good = trainAlgorithm(testData, noise0, noise1, Class0, Class1,  fit.x, True)
     print("Final Error is: ")
     final_result = evaluateLinear(naive,good)
     print(final_result)
