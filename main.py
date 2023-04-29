@@ -26,8 +26,8 @@ def chooseRunMode():
 
 def generateLinearData():
     print("Generating Linear Data")
-    X = np.random.rand(2000,2)*200-100
-    y_size = 1600
+    X = np.random.rand(5000,2)*200-100
+    y_size = 4000
     Y = -1*np.ones((y_size,2))
     index = 0
     for i in range(len(X)):
@@ -44,14 +44,17 @@ def generateLinearData():
     Class1 = []
     for i in range(len(Y)):
         if(Y[i,0] - Y[i,1] ) < 0:
-            #plt.scatter(Y[i, 0], Y[i, 1], c='b')
+            plt.scatter(Y[i, 0], Y[i, 1], c='b')
             Class0.append([Y[i,0], Y[i,1]])
         else:
-            #plt.scatter(Y[i, 0], Y[i, 1], c='r')
+            plt.scatter(Y[i, 0], Y[i, 1], c='r')
             Class1.append([Y[i, 0], Y[i, 1]])
 
+    plt.xlabel("X0")
+    plt.ylabel("X1")
+    plt.title("Linear Separable Dataset")
     print("Checkpoint 1: Synthetic 2-D Linearly Separable Data Created")
-    #plt.show()
+    plt.savefig("Linearly Separable Dataset.png")
     return Class0, Class1
 
 def generateRandomData():
@@ -68,8 +71,14 @@ def generateRandomData():
             x2 = float(row[1])
             if(row[2] == '1.0'):
                 Class1 = np.vstack([Class1,[x1,x2]])
+                plt.scatter(x1, x2, c='b')
             else:
                 Class0 = np.vstack([Class0,[x1,x2]])
+                plt.scatter(x1, x2, c='r')
+    plt.xlabel("X0")
+    plt.ylabel("X1")
+    plt.title("Banana (Random) Dataset")
+    plt.savefig("RandomInitial.png")
     #print(Class1)
     return Class0, Class1
 
@@ -148,7 +157,8 @@ def generateNoisyData(noise0, noise1, Class0, Class1, graph):
         elif graph:
             plt.scatter(combinedData[i,0], combinedData[i,1], c='b', label='Class0')
     plt.title("Noise Added to Linearly Separable Data")
-    plt.show()
+    #plt.show()
+    plt.savefig("Noise Added to Linearly Separable Data.png")
     print("Checkpoint 2: Random Noise Inserted into Linearly Separable Data")
     return combinedData
 # Press the green button in the gutter to run the script.
@@ -433,8 +443,8 @@ def findRow(Class, row):
         if(row == Class[i,:]).all():
             return i
     return 0
-def trySVM(trainData, testData, parameter):
-    clf = svm.SVC(kernel=parameter)  # Linear Kernel
+def trySVM(trainData, testData, parameter, Class0):
+    clf = svm.SVC(kernel=parameter)  # Linear Kernel or rbf depending on the situation
     clf.fit(trainData[:, :2], trainData[:, 2])
     y_pred = clf.predict(testData[:, :2])
 
@@ -448,14 +458,23 @@ def trySVM(trainData, testData, parameter):
 
     incorrect = 0
 
-    for i in range(0, len(y_pred)):
-        if ((testData[i, 0] - testData[i, 1]) < 0 and (y_pred[i] == 1)) or (
-                (testData[i, 0] - testData[i, 1] > 0) and (y_pred[i] == -1)):
-            incorrect = incorrect + 1
+    if(parameter == 'linear'): #this is for linearly separable data
+        for i in range(0, len(y_pred)):
+            if ((testData[i, 0] - testData[i, 1]) < 0 and (y_pred[i] == 1)) or (
+                    (testData[i, 0] - testData[i, 1] > 0) and (y_pred[i] == -1)):
+                incorrect = incorrect + 1
 
 
-    percent_correct = (len(y_pred) - incorrect) / len(y_pred)
-    print("Precent correct using SVM = " + str(percent_correct))
+        percent_correct = (len(y_pred) - incorrect) / len(y_pred)
+        print("Precent correct using SVM = " + str(percent_correct))
+    else:
+        for i in range(0, len(y_pred)):
+            if(testData[i,2] == -1 and y_pred[i] != -1):
+                incorrect = incorrect + 1
+            elif(testData[i,2] ==1 and y_pred[i] != 1):
+                incorrect = incorrect +1
+        percent_correct = (len(y_pred) - incorrect) / len(y_pred)
+        print("Precent correct using SVM = " + str(percent_correct))
     plt.title('Data using SVM')
     plt.savefig('SVM Attempt')
     #plt.show()
@@ -515,21 +534,18 @@ if __name__ == '__main__':
         Class0, Class1 = generateLinearData() #generate synthetic linearly separable 2-D data.
         noisyData = generateNoisyData(noise0, noise1, Class0, Class1, True)
         trainData, testData = splitData(noisyData)
-        trySVM(trainData, testData, 'linear')
+        trySVM(trainData, testData, 'linear', Class0)
     if runMode == 2:
         Class0, Class1 = generateRandomData() #using "banana" dataset like in the actual paper.
         noisyData = generateNoisyData(noise0, noise1, Class0, Class1, True)
         trainData, testData = splitData(noisyData)
-        trySVM(trainData, testData, 'rbf')
+        trySVM(trainData, testData, 'rbf', Class0)
     if runMode == 3:
         Class0, Class1 = downloadUCIBenchmark() #using benchmark thyroid data
         noisyData = generateNoisyData(noise0, noise1, Class0, Class1, False)
         trainData, testData = splitData(noisyData)
         naive, good = trainUCI(trainData, noise0, noise1, 1)
         evaluateUCI(naive,good, Class0, Class1)
-
-
-
 
     if runMode == 1 or runMode == 2 or runMode ==3:
         num_runs = 25
@@ -553,7 +569,7 @@ if __name__ == '__main__':
             if runMode == 3:
                 naive, good = trainUCI(trainData, noise0, noise1, parameter[0, i])
                 results[i, 0], results[i, 1] = evaluateUCI(naive, good, Class0, Class1)
-        print(results)
+        #print(results)
         plt.figure(10)
         y = 1 - np.transpose(results[:,0])
         plt.plot(parameter[0],y)
@@ -570,7 +586,8 @@ if __name__ == '__main__':
             print("Final Error is: ")
             percent_correct_good, percent_correct_naive = evaluateLinear(naive,good)
         if runMode == 2:
-            naive, good = trainAlgorithm(testData, noise0, noise1,  fit.x, True)
+            max_index = np.argmax(results[:,0])
+            naive, good = trainAlgorithm(testData, noise0, noise1,  parameter[0,max_index], True)
             print("Final Error is: ")
             percent_correct_good, percent_correct_naive = evaluateUCI(naive, good, Class0, Class1)
         if runMode == 3:
