@@ -4,6 +4,18 @@ This is Hakan Berk's attempt at a re-implementation of the 2013 paper "Learning 
 
 https://papers.nips.cc/paper_files/paper/2013/file/3871bd64012152bfb53fdf04b401193f-Paper.pdf
 
+Program Requirements
+Python 3.9+ 
+
+Required Packages (Pycharm installs them, otherwise you'll need to do pip3 install on these packages if you don't have them already). 
+-numpy
+-matplotlib
+-matplotlib.pyplot
+-csv
+-from scipy.optimize import minimize
+-from sklearn import svm, metrics
+
+
 The way the program is structured: 
 
 The program first asks "Linear(1) or Banana: Random Data? (2) or UCI Benchmark (3). The user then just enters the integer corresponding to which datset they want to perform against (e.g, 1 ). 
