@@ -1,0 +1,29 @@
+README
+
+This is Hakan Berk's attempt at a re-implementation of the 2013 paper "Learning with Noisy Labels". 
+
+https://papers.nips.cc/paper_files/paper/2013/file/3871bd64012152bfb53fdf04b401193f-Paper.pdf
+
+The way the program is structured: 
+
+The program first asks "Linear(1) or Banana: Random Data? (2) or UCI Benchmark (3). The user then just enters the integer corresponding to which datset they want to perform against (e.g, 1 ). 
+
+Then the program will ask for the two different noise levels to input into the system. The user will enter a decimal which correponds with a percentage of labels to flip. (e.g 0.2 -> 20% labels flipped). The two numbers entered next must sum to less than 1. 
+
+The program will update its status while running to the user. 
+Checkpoint 1: Data imported or created (in the case of linear). 
+Checkpoint 2: Insert Noise into Dataset 
+Checkpoint 3: Split Data into Train and Test 
+Checkpoint 4: Using SVM without noise introduction 
+Checkpoint 5: Training the dataset accounting for noise
+Checkpoint 6: Testing the dataset once parameter found 
+Checkpoint 7: Final Error using testing/validation set.
+
+As a warning, the randomly generated dataset takes the longest to run. This can take up to 10 minutes. To make this faster, you can reduce the value of num_runs on line 511.
+
+There are several plots that are outputted. They are all saved as to not disrupt the runtime to the user. 
+For Checkpoint 1: If the user chose Option 1, a file called "Linearly Separable Dataset.png" will be created to show the data before noise. If the user chose Option 2, a file called "RandomInitial.png" will be created to show the data before noise. There is no plot for Option 3, as UCI benchmark data 5-dimensional and can't be visualized. 
+For Checkpoint 2: The next figure is called "Noise added to Data.png" 
+For Checkpoint 4: The program creates "SVM Attempt.png" when it uses SVM. 
+For Checkpoint 5: The program outputs a figure "Finding_Optimal_Parameter.png"
+For Checkpoint 6. The program plots the Bayesian Decision it makes for linear & random data in two images called "good.png" and "naive.png" good.png implements Lemma 7, while "naive.png" does not do anything to account for the inherit noise in the system. 
