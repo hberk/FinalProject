@@ -11,12 +11,9 @@ import numpy as np
 import matplotlib as plt
 import matplotlib.pyplot as plt
 import csv
-
-import scipy
 from scipy.optimize import minimize
-from sklearn import svm
-import cvxpy as cp
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+from sklearn import svm, metrics
+
 def chooseRunMode():
     # Use a breakpoint in the code line below to debug your script.
     run_type = int(input("Linear (1) or Banana: Random Data? (2) or UCI Benchmark (3) "))
@@ -79,7 +76,7 @@ def generateRandomData():
     plt.ylabel("X1")
     plt.title("Banana (Random) Dataset")
     plt.savefig("RandomInitial.png")
-    #print(Class1)
+    print("Checkpoint 1: Banana Dataset Imported")
     return Class0, Class1
 
 def downloadUCIBenchmark():
@@ -114,6 +111,7 @@ def downloadUCIBenchmark():
                 class0[class0count,:] = all_data[count,:]
                 class0count = class0count + 1
             count = count + 1
+    print("UCI Benchmark Thyroid Data Imported")
     return class0, class1
 def generateNoisyData(noise0, noise1, Class0, Class1, graph):
     print("Generating Noisy Data -- flipping data")
@@ -156,10 +154,10 @@ def generateNoisyData(noise0, noise1, Class0, Class1, graph):
             plt.scatter(combinedData[i,0], combinedData[i,1], c='r', label='Class1' )
         elif graph:
             plt.scatter(combinedData[i,0], combinedData[i,1], c='b', label='Class0')
-    plt.title("Noise Added to Linearly Separable Data")
+    plt.title("Noise Added to Data")
     #plt.show()
-    plt.savefig("Noise Added to Linearly Separable Data.png")
-    print("Checkpoint 2: Random Noise Inserted into Linearly Separable Data")
+    plt.savefig("Noise Added to Data.png")
+    print("Checkpoint 2: Random Noise Inserted Dataset")
     return combinedData
 # Press the green button in the gutter to run the script.
 
@@ -245,8 +243,8 @@ def trainUCI(trainData, noise0, noise1, parameter):
                 pi_0) - 1 / 2 * np.log(det_sigma0)
             # print(str(guess1 > guess0) + " " + str(guess0) + " " + str(guess1) + " " + str(x0[i]) + " " + str(x0[j]))
 
-            naive_prediction[i,0] = x0[i]
-            naive_prediction[i,1] = x1[i]
+            naive_prediction[i, 0] = x0[i]
+            naive_prediction[i, 1] = x1[i]
             naive_prediction[i, 2] = x2[i]
             naive_prediction[i, 3] = x3[i]
             naive_prediction[i, 4] = x4[i]
@@ -274,6 +272,9 @@ def trainUCI(trainData, noise0, noise1, parameter):
                 good_prediction[i,5] = 1
             else:
                 good_prediction[i,5] = -1
+            #print(naive_prediction[i, :])
+            #print(str(guess1) + " " + str(guess0))
+            #print(str(guess1_good) + " " + str(guess0_good) + str(good_guess))
 
     return good_prediction, naive_prediction
 def trainAlgorithm(trainData, noise0, noise1, parameter, printGraphs):
@@ -428,11 +429,16 @@ def evaluateUCI(naive, good, Class0, Class1):
             actualValue = -1
         else:
             actualValue = 1
-        if(naive_pred != actualValue):
+
+        if naive_pred != actualValue:
             incorrect_naive = incorrect_naive + 1
-        if(good_pred != actualValue):
+        if good_pred != actualValue:
             incorrect_good = incorrect_good + 1
 
+    #print(incorrect_naive)
+    #print(len(naive))
+    #print(incorrect_good)
+    #print(len(good))
     percent_correct_good = (len(good) - incorrect_good) / len(good)
     percent_correct_naive = (len(naive) - incorrect_naive) / len(naive)
     #print("Percent for New Algorithm: " + str(percent_correct_good))
@@ -443,6 +449,16 @@ def findRow(Class, row):
         if(row == Class[i,:]).all():
             return i
     return 0
+
+def trySVMUCI(trainData, testData):
+    SVMOptions = ["linear", "poly", "rbf", "sigmoid"]
+    for i in range(0, len(SVMOptions)):
+        clf = svm.SVC(kernel=SVMOptions[i])
+        clf.fit(trainData[:,:5], trainData[:,5])
+        y_pred = clf.predict(testData[:,:5])
+
+        print("Accuracy " + str(SVMOptions[i]) + ":", metrics.accuracy_score(testData[:,5], y_pred ))
+
 def trySVM(trainData, testData, parameter, Class0):
     clf = svm.SVC(kernel=parameter)  # Linear Kernel or rbf depending on the situation
     clf.fit(trainData[:, :2], trainData[:, 2])
@@ -452,79 +468,18 @@ def trySVM(trainData, testData, parameter, Class0):
     #print(y_pred)
     for i in range(len(y_pred)-1):
         if y_pred[i] == 1:
-            plt.scatter(testData[i,0], testData[i,1], c='r')
-        else:
             plt.scatter(testData[i,0], testData[i,1], c='b')
+        else:
+            plt.scatter(testData[i,0], testData[i,1], c='r')
 
     incorrect = 0
 
-    if(parameter == 'linear'): #this is for linearly separable data
-        for i in range(0, len(y_pred)):
-            if ((testData[i, 0] - testData[i, 1]) < 0 and (y_pred[i] == 1)) or (
-                    (testData[i, 0] - testData[i, 1] > 0) and (y_pred[i] == -1)):
-                incorrect = incorrect + 1
-
-
-        percent_correct = (len(y_pred) - incorrect) / len(y_pred)
-        print("Precent correct using SVM = " + str(percent_correct))
-    else:
-        for i in range(0, len(y_pred)):
-            if(testData[i,2] == -1 and y_pred[i] != -1):
-                incorrect = incorrect + 1
-            elif(testData[i,2] ==1 and y_pred[i] != 1):
-                incorrect = incorrect +1
-        percent_correct = (len(y_pred) - incorrect) / len(y_pred)
-        print("Precent correct using SVM = " + str(percent_correct))
+    print("Checkpoint 4: Accuracy using SVM: ", metrics.accuracy_score(testData[:, 2], y_pred))
     plt.title('Data using SVM')
     plt.savefig('SVM Attempt')
     #plt.show()
 
-def tryGradientSearch(trainData):
-    max_iterations = 50000
-    theta_k = np.zeros(3)
-    theta_k = np.atleast_2d(theta_k)
-    theta_k = np.transpose(theta_k)  # this converts theta to a column vector
-    all_data = trainData[:, :2]
-    num_rows, num_cols = np.shape(all_data)
-    ones = np.transpose(np.atleast_2d(np.ones(num_rows)))
-    all_data = np.hstack([ones, all_data])
-    y = trainData[:, 2]
-    y = np.atleast_2d(y)
-    y = np.transpose(y)
-    J = np.array([])
-    J = np.append(J, np.sum(np.power((y - np.matmul(all_data, theta_k)),
-                                     2)))  # The first cost function analysis which gives 3224 which is right
-    del_theta_k = np.matmul(np.transpose(all_data), (np.matmul(all_data, theta_k) - y))
-    print(np.shape(all_data))
-    print(np.shape(theta_k))
-    print(np.shape(np.matmul(all_data,theta_k)))
-    print(np.shape(y))
-    print(np.shape(del_theta_k))
-    num_iter = 0
-    numerator = np.matmul(np.transpose(del_theta_k), del_theta_k)
-    denominator = np.matmul(np.matmul(np.transpose(del_theta_k), np.matmul(np.transpose(all_data), all_data)),
-                            del_theta_k)
-    print(numerator)
-    print(denominator)
-    alpha = np.array([])
-    alpha = np.append(alpha, numerator / denominator)
-    print(alpha)
-    while num_iter < max_iterations:
-        theta_k = theta_k - alpha[num_iter] * del_theta_k
-        # print(theta_k)
-        J = np.append(J, np.sum(np.power((y - np.matmul(all_data, theta_k)), 2)))
-        #print(J)
-        del_theta_k = np.matmul(np.transpose(all_data), (np.matmul(all_data, theta_k) - y))
-        numerator = -np.matmul(np.transpose(del_theta_k), del_theta_k)
-        denominator = np.matmul(np.matmul(np.transpose(del_theta_k), np.matmul(np.transpose(all_data), all_data)),
-                                del_theta_k)
-        alpha = np.append(alpha, np.abs(numerator / denominator))
-        # print(alpha)
-        num_iter = num_iter + 1
-    print("Final answer is: " + str(theta_k) + " Matches previous answers")
-    plt.plot(J)
-    plt.show()
-#
+
 def polyfit(x,z):
     return x**3*z[0] + x**2*z[1] + x*z[2] + z[3]
 
@@ -544,17 +499,19 @@ if __name__ == '__main__':
         Class0, Class1 = downloadUCIBenchmark() #using benchmark thyroid data
         noisyData = generateNoisyData(noise0, noise1, Class0, Class1, False)
         trainData, testData = splitData(noisyData)
+        trySVMUCI(trainData,testData)
         naive, good = trainUCI(trainData, noise0, noise1, 1)
         evaluateUCI(naive,good, Class0, Class1)
 
     if runMode == 1 or runMode == 2 or runMode ==3:
-        num_runs = 25
+        print("Checkpoint 5: Training the Dataset")
+        num_runs = 50
         if runMode == 1:
-            parameter = np.linspace(0.1,2.5,num_runs)
+            parameter = np.linspace(0.1, 2.5, num_runs)
         elif runMode == 2:
             parameter = np.linspace(0.1, 2.5, num_runs)
         else:
-            parameter = np.linspace(0.1, 10, num_runs)
+            parameter = np.linspace(0.1, 50, num_runs)
         parameter = np.atleast_2d(parameter)
         results = np.zeros((num_runs,2))
         trainData = trainData[1:len(trainData),:]
@@ -576,24 +533,25 @@ if __name__ == '__main__':
         z = np.polyfit(parameter[0],y,3)
         y2 = np.poly1d(z)
         plt.plot(parameter[0],y2(parameter[0]))
-        plt.show()
+        plt.title("Polyfit of Error with varying of Parameter")
+        plt.xlabel("Parameter Value")
+        plt.ylabel("Prediction Error against Truth")
+        plt.savefig("Finding_Optimal_Parameter.png")
         fit = minimize(polyfit,x0=1,args=(z))
         print("Optimized parameter is: " + str(fit.x))
 
-        print("Now we use the test data to see how good it was")
+        print("Checkpoint 6: Testing Dataset using Parameter found")
         if runMode == 1:
             naive, good = trainAlgorithm(testData, noise0, noise1,  fit.x, True)
-            print("Final Error is: ")
             percent_correct_good, percent_correct_naive = evaluateLinear(naive,good)
         if runMode == 2:
             max_index = np.argmax(results[:,0])
             naive, good = trainAlgorithm(testData, noise0, noise1,  parameter[0,max_index], True)
-            print("Final Error is: ")
             percent_correct_good, percent_correct_naive = evaluateUCI(naive, good, Class0, Class1)
         if runMode == 3:
             naive, good = trainUCI(testData, noise0, noise1, fit.x)
-            print("Final Error is: ")
             percent_correct_good, percent_correct_naive = evaluateUCI(naive, good, Class0, Class1)
+        print("Checkpoint 7: Final error is:")
         print("Percent Correct for New Algorithm: " + str(percent_correct_good))
         print("Percent Correct for Naive Algorithm: " + str(percent_correct_naive))
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
