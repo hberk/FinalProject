@@ -60,7 +60,7 @@ def generateRandomData():
     Class0 = np.zeros((1,2))
     Class1 = np.zeros((1,2))
 
-    with open('banana.csv', 'r') as file:
+    with open('Datasets/banana.csv', 'r') as file:
         reader = csv.reader(file,delimiter=',', quotechar='"')
         next(file)
         for row in reader:
@@ -86,7 +86,7 @@ def downloadUCIBenchmark():
     class1 = np.zeros((65,5))
     count = 0
     #the first file just has the data
-    with open('thyroid_x.csv', 'r') as file:
+    with open('Datasets/thyroid_x.csv', 'r') as file:
         reader = csv.reader(file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
 
         for row in reader:
@@ -101,7 +101,7 @@ def downloadUCIBenchmark():
     class0count = 0
     class1count = 0
     count = 0
-    with open('thyroid_y.csv', 'r') as file:
+    with open('Datasets/thyroid_y.csv', 'r') as file:
         reader = csv.reader(file, quoting=csv.QUOTE_NONNUMERIC)
         for row in reader:
             if(row[0] == 1):
@@ -382,7 +382,6 @@ def trainAlgorithm(trainData, noise0, noise1, parameter, printGraphs):
 
         plt.title('Data with Naive Boundary Drawn')
         if(printGraphs):
-            #plt.show()
             plt.savefig('naive.png')
 
         plt.figure(5)
@@ -393,7 +392,6 @@ def trainAlgorithm(trainData, noise0, noise1, parameter, printGraphs):
                 plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
         plt.title('Data with Good Boundary Drawn')
         if(printGraphs):
-            #plt.show()
             plt.savefig('good.png')
 
     return naive_prediction, good_prediction
