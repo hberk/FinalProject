@@ -15,6 +15,7 @@ Required Packages (Pycharm installs them, otherwise you'll need to do pip3 insta
 -from scipy.optimize import minimize
 -from sklearn import svm, metrics
 
+### RUN main.py ###
 
 The way the program is structured: 
 
