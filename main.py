@@ -381,8 +381,7 @@ def trainAlgorithm(trainData, noise0, noise1, parameter, printGraphs):
                 plt.scatter(naive_prediction[i, 0], naive_prediction[i, 1], c='b')
 
         plt.title('Data with Naive Boundary Drawn')
-        if(printGraphs):
-            plt.savefig('naive.png')
+        plt.savefig('naive.png')
 
         plt.figure(5)
         for i in range(0, (len(trainData[:,0]))):
@@ -391,8 +390,7 @@ def trainAlgorithm(trainData, noise0, noise1, parameter, printGraphs):
             else:
                 plt.scatter(good_prediction[i, 0], good_prediction[i, 1], c='b')
         plt.title('Data with Good Boundary Drawn')
-        if(printGraphs):
-            plt.savefig('good.png')
+        plt.savefig('good.png')
 
     return naive_prediction, good_prediction
 
