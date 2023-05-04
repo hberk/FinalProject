@@ -554,4 +554,3 @@ if __name__ == '__main__':
         print("Checkpoint 7: Final error is:")
         print("Percent Correct for New Algorithm: " + str(percent_correct_good))
         print("Percent Correct for Naive Algorithm: " + str(percent_correct_naive))
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
