@@ -266,8 +266,8 @@ def trainUCI(trainData, noise0, noise1, parameter):
             good_guess = np.exp(guess1_good)/(np.exp(guess0_good)+np.exp(guess1_good))
             noisyClassifierAdjuster = (0.5 - noise0)/(1-noise1-noise0)
             #This if statement is saying P(x given y = 1) * P(Y = 1) / ( P( x given y = 1) * P(y=1) + P(x given y = -1)*P(y=-1)
-            if noise0 != noise1:
-                noisyClassifierAdjuster = noisyClassifierAdjuster*parameter
+
+            noisyClassifierAdjuster = noisyClassifierAdjuster*parameter
             if np.sign(good_guess - noisyClassifierAdjuster) == 1:
                 good_prediction[i,5] = 1
             else:
